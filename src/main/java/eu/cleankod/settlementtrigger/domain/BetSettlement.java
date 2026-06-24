@@ -9,21 +9,24 @@ public record BetSettlement(
         String eventWinnerId,
         String selectedWinnerId,
         BigDecimal betAmount,
-        BetStatus status
+        BetStatus outcome
 ) {
 
-    public static BetSettlement of(Bet settledBet, EventOutcome outcome) {
-        if (!settledBet.eventId().equals(outcome.eventId())) {
-            throw new EventMismatchException(settledBet.id(), settledBet.eventId(), outcome.eventId());
+    public static BetSettlement of(Bet pendingBet, EventOutcome eventOutcome) {
+        if (!pendingBet.eventId().equals(eventOutcome.eventId())) {
+            throw new EventMismatchException(pendingBet.id(), pendingBet.eventId(), eventOutcome.eventId());
         }
+        BetStatus settlementOutcome = pendingBet.selectedWinnerId().equals(eventOutcome.eventWinnerId())
+                ? BetStatus.WON
+                : BetStatus.LOST;
         return new BetSettlement(
-                settledBet.id(),
-                settledBet.userId(),
-                settledBet.eventId(),
-                outcome.eventWinnerId(),
-                settledBet.selectedWinnerId(),
-                settledBet.betAmount(),
-                settledBet.status()
+                pendingBet.id(),
+                pendingBet.userId(),
+                pendingBet.eventId(),
+                eventOutcome.eventWinnerId(),
+                pendingBet.selectedWinnerId(),
+                pendingBet.betAmount(),
+                settlementOutcome
         );
     }
 }

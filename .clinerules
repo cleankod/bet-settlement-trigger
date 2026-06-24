@@ -1,0 +1,277 @@
+# Settlement Trigger — Project Rules for Cline
+
+## Project identity
+
+- Project name: `bet-settlement-trigger`
+- Application name: `Bet Settlement Trigger`
+- Root Java package: `eu.cleankod.settlementtrigger`
+- All Java packages must start with `eu.cleankod.settlementtrigger`
+- Avoid unexplained abbreviations
+- README and MkDocs must consistently refer to the service as `Bet Settlement Trigger`
+
+## Assignment scope
+
+- Build a backend application that simulates sports betting event outcome handling and bet settlement.
+- Required flow:
+  1. REST API receives sports event outcome.
+  2. REST adapter publishes outcome to Kafka topic `event-outcomes`.
+  3. Kafka consumer listens to `event-outcomes`.
+  4. Application matches event outcome to bets stored in an in-memory database.
+  5. Settlement command is published to the settlement messaging port.
+  6. RocketMQ is represented by a mock/logging adapter unless real RocketMQ setup is trivial.
+  7. Settlement message handler consumes settlement commands and settles matching bets.
+- REST endpoint: `POST /api/v1/event-outcomes`
+- Kafka topic: `event-outcomes`
+- RocketMQ topic concept: `bet-settlements`
+- Use an in-memory database for bets.
+- RocketMQ may be mocked/logged because the assignment explicitly allows it.
+- Keep the implementation proportional to a home assignment expected to take around 90 minutes.
+- The goal is a production-shaped slice, not a full betting platform.
+
+## Technology stack
+
+- Java 25
+- Spring Boot 4
+- Spring Data JDBC
+- H2 in-memory database
+- Flyway migrations
+- Kafka with Spring Kafka
+- RocketMQ mocked through clean settlement ports/adapters unless real setup is trivial
+- **Gradle Groovy DSL** with version catalog (`settings.gradle`, `build.gradle`, `gradle/libs.versions.toml`)
+- JUnit 5
+- AssertJ
+- Testcontainers
+- Micrometer
+- Spring Boot Actuator
+- SLF4J with Logback
+- Docker Compose
+- Multi-stage Dockerfile
+- MkDocs for internal documentation
+
+## Build rules
+
+- Use Gradle, not Maven.
+- Use: `settings.gradle`, `build.gradle`, `gradle/libs.versions.toml`, `./gradlew`
+- Do not generate `pom.xml`.
+- Do not use `./mvnw`.
+- Dependencies must be declared through the Gradle version catalog where practical.
+- Keep dependencies minimal and justified.
+- Do not add libraries only to look impressive.
+
+## Architecture rules
+
+- Use lightweight Hexagonal Architecture / Ports and Adapters.
+- Keep the domain pure and framework-free.
+- Domain must not depend on: Spring, Kafka, RocketMQ, JDBC, REST/web APIs, Micrometer.
+- Ports belong in the application layer, not in the domain layer.
+- Use this package layout:
+
+```
+eu.cleankod.settlementtrigger
+  domain
+  application
+    port
+      in
+      out
+  adapter
+    in
+      rest
+      kafka
+      settlement
+    out
+      kafka
+      persistence
+      settlement
+  config
+```
+
+- Use `adapter`, not `infrastructure`, as the package segment.
+- Inbound adapters: REST controller, Kafka consumer, settlement message handler / local settlement simulator.
+- Outbound adapters: Kafka publisher, Spring Data JDBC persistence, logging/mock settlement publisher.
+- Do not introduce abstractions before there are at least two concrete reasons, except for ports that protect external boundaries.
+- Prefer boring, explicit code over clever code.
+- Keep the design easy to explain in an interview.
+- Do not use CQRS, event sourcing, sagas, multi-module Gradle, or outbox pattern unless explicitly approved.
+- Document such patterns as future improvements where appropriate.
+
+## Domain model rules
+
+- Domain objects should be immutable or mostly immutable.
+- Prefer records where they improve clarity.
+- Do not make domain objects mutable only for persistence convenience.
+- If Spring Data JDBC needs mutable state or annotations, put that in persistence adapter entities, not in domain.
+- Domain should model: `EventOutcome`, `Bet`, `BetSettlement`, `BetStatus`.
+- `BetStatus` values: `PENDING`, `WON`, `LOST`.
+- Settlement logic: if selected winner equals actual event winner, bet is `WON`; otherwise `LOST`.
+- Settlement must be idempotent — already-settled bets must not be settled again.
+- Do not claim exactly-once processing.
+- `Bet` fields: `id`, `userId`, `eventId`, `eventMarketId`, `selectedWinnerId`, `betAmount`, `status`.
+
+## Application layer rules
+
+- Application services orchestrate use cases.
+- Application services may depend on ports and domain classes.
+- Application services must not depend on adapter technologies.
+- Inbound ports:
+  - `PublishEventOutcomeUseCase` — called by REST adapter
+  - `HandleEventOutcomeUseCase` — called by Kafka consumer; orchestrates matching bets + publishing settlement commands
+  - `SettleBetUseCase` — called by settlement message handler; settles a single bet
+- Outbound ports:
+  - `EventOutcomePublisher`
+  - `BetRepository`
+  - `BetSettlementPublisher`
+- Keep use cases small, explicit, and readable.
+
+## Persistence rules
+
+- Use Spring Data JDBC, not JPA/Hibernate.
+- Use H2 in-memory database.
+- Use Flyway migrations, not `schema.sql` / `data.sql`.
+- Expected migrations:
+  - `V1__create_bets.sql` — in `src/main/resources/db/migration/`
+  - `V2__seed_sample_bets.sql` — in `src/test/resources/db/migration/`
+- Persistence adapter belongs under `eu.cleankod.settlementtrigger.adapter.out.persistence`.
+- Persistence entities may be mutable and framework-annotated.
+- Domain classes must remain persistence-agnostic.
+
+## REST API rules
+
+- Endpoint: `POST /api/v1/event-outcomes`
+- Input fields: `eventId`, `eventName`, `eventWinnerId`
+- Validate input using Bean Validation.
+- Return `202 Accepted` after accepting outcome for publishing.
+- Implement global error handling.
+- Error responses should contain: `errorId`, `code`, `message`, `details` where useful.
+- Do not leak internal exception names or stack traces.
+- Support `X-Correlation-ID` header; generate one if absent; put into MDC.
+
+## Kafka rules
+
+- Kafka topic: `event-outcomes`
+- Prefer KRaft-based Kafka in Docker Compose. Avoid ZooKeeper.
+- Kafka producer implements `EventOutcomePublisher` application port.
+- Kafka consumer lives in inbound adapter package.
+- Kafka consumer calls `HandleEventOutcomeUseCase`.
+- Kafka-specific APIs must not leak into domain or application layers.
+- Propagate correlation ID through Kafka headers.
+- Use JSON payloads.
+- Add minimal Kafka DLT/error handling if practical; document trade-off if not implemented.
+
+## Settlement / RocketMQ rules
+
+- RocketMQ may be mocked because the assignment allows it.
+- Keep publishing and consuming separate.
+- Do not hide consuming logic inside the publisher implementation.
+- Use:
+  - `BetSettlementPublisher` (out port) → `LoggingBetSettlementPublisher` (mock impl, logs JSON)
+  - `BetSettlementMessageHandler` (in adapter) → handles settlement commands
+  - `LocalBetSettlementSimulator` (in adapter, local/test profile only) → connects publisher to handler
+- Settlement command should include: `messageVersion`, `messageId`, `betId`, `userId`, `eventId`,
+  `eventWinnerId`, `betAmount`, `correlationId`.
+- RocketMQ-specific APIs must not leak into application or domain layers.
+- Delivery guarantee: at-least-once. Never claim exactly-once.
+- RocketMQ DLQ is a future improvement.
+
+## Observability rules
+
+- Use SLF4J with Logback.
+- Use MDC where sensible. Correlation ID must be visible in logs.
+- Basic Micrometer/Actuator metrics are in scope.
+- Full OpenTelemetry, Prometheus, Grafana, distributed tracing are future improvements.
+
+## Testing rules
+
+- Prefer integration tests over internal mocking.
+- Use Testcontainers for Kafka integration tests.
+- Unit tests only for pure logic with no injected dependencies.
+- Use JUnit 5 and AssertJ.
+- Tests should use given/when/then comments.
+- Test at least: valid REST request, validation failure, Kafka flow, bet matching, WON/LOST settlement,
+  duplicate event outcome, idempotency (already-settled bet unchanged).
+- Test profile activates `LocalBetSettlementSimulator` for full-flow verification.
+
+## Docker rules
+
+- Provide Docker Compose: application + Kafka + optional supporting services.
+- Provide a multi-stage Dockerfile.
+- H2 runs in-memory inside the app.
+- Real RocketMQ is optional; prefer reliability over impressive but fragile infra.
+
+## Documentation rules
+
+- Provide README and MkDocs internal documentation.
+- README must explain: assignment summary, prerequisites, quick start, Docker Compose start,
+  running tests, running MkDocs, API examples, architecture overview, observability,
+  reliability assumptions, trade-offs, AI usage disclosure, "given more time" section.
+- README commands must be copy-paste verified before submission.
+- Documentation must not overpromise features.
+- "Given more time" must not include things essential for the assignment.
+- Clearly document: at-least-once delivery, idempotent consumers, RocketMQ mock trade-off,
+  real RocketMQ/outbox/full observability as future improvements.
+
+## Commit rules
+
+- One meaningful commit per coherent change.
+- Do not batch unrelated changes.
+- Commit message format: short one-line summary explaining what and why; optional extended body if useful.
+- Preferred commit sequence:
+  1. `docs: capture assignment scope and delivery strategy`
+  2. `chore: add Cline rules and project memory bank`
+  3. `docs: define lightweight hexagonal architecture`
+  4. `init: scaffold Gradle project`
+  5. `build: add containerized local runtime`
+  6. `feat: model bet settlement domain rules`
+  7. `feat: define application ports and use cases`
+  8. `feat: add validated event outcome REST API`
+  9. `feat: add in-memory bet persistence`
+  10. `feat: integrate event outcome flow with Kafka`
+  11. `feat: match event outcomes to unsettled bets`
+  12. `refactor: simplify design before completing message flow` (if needed)
+  13. `feat: add settlement publishing adapter`
+  14. `feat: settle bets from settlement messages`
+  15. `feat: add bounded request handling and resilience controls` (if implemented)
+  16. `feat: improve traceability and business observability`
+  17. `docs: finalize usage and architecture documentation`
+  18. `docs: document responsible AI usage`
+  19. `docs: add interview-oriented technical summary`
+  20. `chore: apply final review fixes`
+  21. `chore: verify submission readiness`
+- Do not proceed to the next commit if current tests/build are broken.
+
+## Branching workflow
+
+- No direct commits to `master`.
+- Each logical stage has its own feature branch.
+- Branch naming pattern: `kebab-case` describing the stage, for example:
+  - `project-rules`
+  - `domain-model`
+  - `application-ports-and-services`
+  - `in-memory-bet-persistence`
+  - `event-outcome-rest-api`
+  - `kafka-integration`
+  - `settlement-adapter`
+  - `observability`
+  - `integration-tests`
+  - `documentation`
+- Workflow per stage:
+  1. User creates the branch and tells Cline.
+  2. Cline implements the stage with individual commits.
+  3. User pushes, reviews, requests fixes if needed.
+  4. User merges to `master`.
+  5. User pulls `master` and tells Cline.
+  6. Cline acknowledges and suggests the next branch name.
+  7. Go to step 1.
+
+## Out of scope (document as future improvements)
+
+- Real RocketMQ broker
+- Outbox pattern for Kafka publishing
+- Exactly-once semantics
+- RocketMQ DLQ
+- Advanced rate limiting
+- Full observability stack (OTel, Prometheus, Grafana, tracing)
+- CI/CD pipeline
+- Kubernetes / Helm
+- Authentication / authorization
+- Wallet / payout service
+- Event sourcing / CQRS / sagas

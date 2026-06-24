@@ -8,7 +8,8 @@
 | `contenerized-local-runtime` | `Dockerfile` (multi-stage), `docker-compose.yml` (Kafka KRaft + RocketMQ) | ✅ merged |
 | `gitignore-hexagonal-arch-fix` | Fixed `.gitignore`: `out/` → `/out/` to allow `application/port/out/` to be tracked | ✅ merged |
 | `project-rules` | `.clinerules` with full project rules, commit conventions, branching workflow | ✅ merged |
-| `project-memory-bank` | This memory bank | 🔄 in progress |
+| `project-memory-bank` | This memory bank | ✅ merged |
+| `domain-model` | `BetStatus`, `Bet`, `EventOutcome`, `BetSettlement` | 🔄 in progress |
 
 ## In-Progress / Next Stages
 

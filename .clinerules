@@ -262,6 +262,16 @@ eu.cleankod.settlementtrigger
   6. Cline acknowledges and suggests the next branch name.
   7. Go to step 1.
 
+## Memory bank
+
+- Memory bank lives in `.cline/` and must be kept up to date.
+- After completing each branch/stage, update these files before committing:
+  - `progress.md` — mark the stage as completed, add any new stages discovered
+  - `activeContext.md` — update current state, recent decisions, next steps
+- After significant design decisions, update `techContext.md` if the tech context changed.
+- Memory bank updates must be included in the branch's own commits, not as a separate branch.
+- When resuming after an interruption, read `activeContext.md` first, then `progress.md`.
+
 ## Out of scope (document as future improvements)
 
 - Real RocketMQ broker

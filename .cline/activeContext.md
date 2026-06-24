@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Branch: `project-memory-bank`
-- Based on: freshly merged `master` (includes gitignore fix + .clinerules)
-- Task: creating memory bank files
+- Branch: `domain-model`
+- Based on: freshly merged `master`
+- Task: domain model classes created, ready to commit
 
 ## Most Recent Decisions
 
@@ -37,9 +37,8 @@ These 3 files exist untracked and will be committed on the `application-ports-an
 
 ## Immediate Next Steps After This Branch Merges
 
-1. `domain-model` branch → `BetStatus`, `Bet`, `EventOutcome`, `BetSettlement`
-2. `application-ports-and-services` → port/in interfaces + the 3 untracked port/out files + services
-3. Continue per `progress.md`
+1. `application-ports-and-services` → port/in interfaces + the 3 untracked port/out files + services
+2. Continue per `progress.md`
 
 ## Session Resumption Notes
 

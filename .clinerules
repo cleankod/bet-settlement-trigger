@@ -94,6 +94,15 @@ eu.cleankod.settlementtrigger
 - Do not use CQRS, event sourcing, sagas, multi-module Gradle, or outbox pattern unless explicitly approved.
 - Document such patterns as future improvements where appropriate.
 
+## Domain exception rules
+
+- Domain invariant violations must throw custom domain exceptions (subclasses of `RuntimeException` in the `domain` package).
+- Do not throw `IllegalStateException`, `IllegalArgumentException`, or other generic JDK exceptions for domain rule violations.
+- Custom domain exceptions are named after the violated invariant (e.g., `BetAlreadySettledException`, `EventMismatchException`).
+- Exception messages must identify the affected entity by id and describe the violated invariant.
+- Domain exceptions should be handled in global exception handlers in the adapter layer.
+- Domain methods must not catch domain exceptions — no try/catch inside domain classes.
+
 ## Domain model rules
 
 - Domain objects should be immutable or mostly immutable.

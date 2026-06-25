@@ -3,7 +3,7 @@ spring:
     name: 'bet-settlement-trigger'
 
   datasource:
-    url: 'jdbc:h2:mem:bets;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE'
+    url: 'jdbc:h2:mem:bets;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;CASE_INSENSITIVE_IDENTIFIERS=TRUE'
     driver-class-name: 'org.h2.Driver'
     username: 'sa'
     password: ''
@@ -21,6 +21,7 @@ spring:
       value-deserializer: 'org.springframework.kafka.support.serializer.JsonDeserializer'
       properties:
         spring.json.trusted.packages: 'eu.cleankod.settlementtrigger.*'
+        spring.json.value.default.type: 'eu.cleankod.settlementtrigger.domain.EventOutcome'
     producer:
       key-serializer: 'org.apache.kafka.common.serialization.StringSerializer'
       value-serializer: 'org.springframework.kafka.support.serializer.JsonSerializer'

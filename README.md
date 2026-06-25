@@ -228,14 +228,14 @@ the response is returned immediately after successful publication.
 |-----------------------------|-------------------------------------|
 | `202 Accepted`              | Outcome accepted for publication    |
 | `400 Bad Request`           | Validation failure — see error body |
-| `500 Internal Server Error` | Publication to Kafka failed         |
+| `503 Service Unavailable`   | Publication to Kafka failed         |
 
 **Error response body:**
 
 ```json
 {
   "errorId": "550e8400-e29b-41d4-a716-446655440000",
-  "code": "VALIDATION_ERROR",
+  "code": "VALIDATION_FAILURE",
   "message": "Request validation failed",
   "details": [
     "eventId: must not be blank"
@@ -339,7 +339,7 @@ Example:
 ### Correlation ID propagation
 
 - Inbound: read from `X-Correlation-ID` header (generated if absent), stored in MDC
-- Outbound Kafka: written as a Kafka header `X-Correlation-ID`
+- Outbound Kafka: written as a Kafka message header `correlationId` (note: different name from the HTTP header)
 - Inbound Kafka: read from Kafka header, restored to MDC for the consumer thread
 
 ---

@@ -42,7 +42,6 @@ class LocalBetSettlementPublisher implements BetSettlementPublisher {
                 betSettlement.eventWinnerId(),
                 betSettlement.selectedWinnerId(),
                 betSettlement.betAmount());
-        log.debug("LocalBetSettlementPublisher forwarding settlement command [betId={}]", betSettlement.betId());
         settleBetUseCase.settle(betSettlement);
     }
 }

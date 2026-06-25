@@ -364,6 +364,8 @@ in a production implementation:
   or GitLab CI)
 - **12-Factor App validation** — Review the service against the [12-factor methodology](https://www.12factor.net/)
   to identify configuration, logging, and disposability improvements
+- **Auto-generated API docs** — Add SpringDoc/OpenAPI dependency to expose a Swagger UI and
+  machine-readable OpenAPI spec at `/swagger-ui.html` and `/v3/api-docs`
 - **Kubernetes / Helm** — Production deployment manifests
 
 ---

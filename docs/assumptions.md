@@ -166,15 +166,28 @@ out of scope for the assignment.
 
 ---
 
-## In-memory database: no durability across restarts
+## In-memory database: H2 vs. a plain Map
 
-### Assumption
+### Ambiguity
 
-H2 runs in-memory — all bets are lost on application restart. This is explicitly required by the
-assignment ("use an in-memory database for the bets").
+The assignment says "use an in-memory database for the bets." This phrase is intentionally
+open-ended and in recruitment exercises it commonly means one of two things:
 
-### Production consideration
+1. **A plain `ConcurrentHashMap`-based repository** — quick to write, no dependencies, commonly
+   seen in home assignments to keep setup minimal
+2. **An embedded relational database** (H2, HSQLDB) — still in-memory, but provides real SQL,
+   schema migrations, and a persistence layer that looks like production
 
-A persistent database (PostgreSQL, MySQL) with Flyway migrations would replace H2. The Flyway
-migration files (`V1__create_bets.sql`) are already structured to work with any SQL database
-with minimal changes.
+### Decision
+
+We chose **H2 with Spring Data JDBC and Flyway migrations** for the following reasons:
+
+- The `BetRepository` port and the `JdbcBetRepositoryAdapter` demonstrate how the architecture
+  cleanly separates domain from persistence — regardless of whether the backend is a Map or a DB
+- Flyway migrations (`V1__create_bets.sql`) show schema evolution discipline
+- Swapping H2 for PostgreSQL or MySQL requires only a driver change and a connection string;
+  all other code stays the same
+
+### Limitation (same in both approaches)
+
+All bet data is lost on application restart. This is expected and acceptable per the assignment.

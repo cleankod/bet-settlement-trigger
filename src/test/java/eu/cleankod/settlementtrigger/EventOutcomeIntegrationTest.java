@@ -147,8 +147,8 @@ class EventOutcomeIntegrationTest extends BaseIntegrationTest {
             // when — duplicate event outcome sent
             restTemplate.postForEntity("/api/v1/event-outcomes", request, Void.class);
 
-            // then — bet remains WON; duplicate is a no-op (findPendingByEventId returns empty)
-            await().atMost(5, TimeUnit.SECONDS)
+            // then — bet remains WON throughout the window; proves duplicate is a no-op
+            await().during(3, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS)
                     .untilAsserted(() -> assertThat(
                             betRepository.findById(102L)
                                     .map(bet -> bet.status())

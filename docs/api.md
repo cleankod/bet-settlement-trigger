@@ -1,5 +1,39 @@
 # API Reference
 
+## POST /api/v1/bets
+
+Places a new bet in the system. The bet is stored in `PENDING` status and will be matched
+against event outcomes when they arrive.
+
+**Request:**
+
+```json
+{
+  "userId": "user-alice",
+  "eventId": "match-101",
+  "eventMarketId": "market-main",
+  "selectedWinnerId": "team-alpha",
+  "betAmount": 50.00
+}
+```
+
+| Field | Type | Required | Constraints |
+|-------|------|----------|-------------|
+| `userId` | string | ✅ | not blank |
+| `eventId` | string | ✅ | not blank |
+| `eventMarketId` | string | ✅ | not blank |
+| `selectedWinnerId` | string | ✅ | not blank — the participant the user predicts will win |
+| `betAmount` | decimal | ✅ | > 0 |
+
+**Responses:**
+
+| Status | Description |
+|--------|-------------|
+| `201 Created` | Bet placed; `Location` header contains `/api/v1/bets/{betId}` |
+| `400 Bad Request` | Validation failure — see error body |
+
+---
+
 ## POST /api/v1/event-outcomes
 
 Accepts a sports event outcome for processing. The outcome is accepted synchronously and

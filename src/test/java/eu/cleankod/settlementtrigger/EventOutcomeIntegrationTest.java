@@ -19,11 +19,12 @@ import static org.awaitility.Awaitility.await;
  *
  * <p>Covers: REST validation, full WON/LOST settlement flows, idempotency on duplicate
  * event outcomes, and graceful handling when no matching bets exist.
- *
- * <p>Test bets are placed via {@code POST /api/v1/bets} in the given section of each test,
- * exercising the bet placement endpoint and eliminating the need for a SQL seed migration.
  */
 class EventOutcomeIntegrationTest extends BaseIntegrationTest {
+
+    // Settlement matching is by eventId only — the market field is carried for audit
+    // but does not affect which bets are matched or how they are settled.
+    private static final String ANY_MARKET = "market-main";
 
     @Nested
     class WhenRestEndpointReceivesOutcome {
@@ -87,7 +88,7 @@ class EventOutcomeIntegrationTest extends BaseIntegrationTest {
             Map<String, Object> request = Map.of(
                     "userId", "user-alice",
                     "eventId", "event-place-bet-test",
-                    "eventMarketId", "market-main",
+                    "eventMarketId", ANY_MARKET,
                     "selectedWinnerId", "team-alpha",
                     "betAmount", BigDecimal.valueOf(50.00)
             );
@@ -110,7 +111,7 @@ class EventOutcomeIntegrationTest extends BaseIntegrationTest {
             Map<String, Object> request = Map.of(
                     "userId", "user-alice",
                     "eventId", "event-place-bet-test",
-                    "eventMarketId", "market-main",
+                    "eventMarketId", ANY_MARKET,
                     "selectedWinnerId", "team-alpha",
                     "betAmount", BigDecimal.ZERO
             );
@@ -130,7 +131,7 @@ class EventOutcomeIntegrationTest extends BaseIntegrationTest {
         @Test
         void settlesBetAsWonWhenSelectedWinnerMatchesActualWinner() {
             // given — place a bet on team-alpha for this event
-            long betId = placeBet("user-alice", "event-won-scenario", "market-main", "team-alpha", BigDecimal.valueOf(50.00));
+            long betId = placeBet("user-alice", "event-won-scenario", ANY_MARKET, "team-alpha", BigDecimal.valueOf(50.00));
 
             // when — event outcome arrives: team-alpha won
             ResponseEntity<Void> response = restTemplate.postForEntity(
@@ -153,7 +154,7 @@ class EventOutcomeIntegrationTest extends BaseIntegrationTest {
         @Test
         void settlesBetAsLostWhenSelectedWinnerDiffersFromActualWinner() {
             // given — place a bet on team-alpha, but actual winner will be team-beta
-            long betId = placeBet("user-bob", "event-lost-scenario", "market-main", "team-alpha", BigDecimal.valueOf(30.00));
+            long betId = placeBet("user-bob", "event-lost-scenario", ANY_MARKET, "team-alpha", BigDecimal.valueOf(30.00));
 
             // when — event outcome arrives: team-beta won
             ResponseEntity<Void> response = restTemplate.postForEntity(
@@ -176,7 +177,7 @@ class EventOutcomeIntegrationTest extends BaseIntegrationTest {
         @Test
         void doesNotResettleAlreadySettledBet() {
             // given — place a bet on team-gamma
-            long betId = placeBet("user-carol", "event-idempotency-scenario", "market-main", "team-gamma", BigDecimal.valueOf(20.00));
+            long betId = placeBet("user-carol", "event-idempotency-scenario", ANY_MARKET, "team-gamma", BigDecimal.valueOf(20.00));
 
             Map<String, String> request = Map.of(
                     "eventId", "event-idempotency-scenario",

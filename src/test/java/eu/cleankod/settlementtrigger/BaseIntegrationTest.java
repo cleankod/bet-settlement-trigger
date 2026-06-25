@@ -64,6 +64,7 @@ abstract class BaseIntegrationTest {
         ResponseEntity<Void> response = restTemplate.postForEntity("/api/v1/bets", request, Void.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         URI location = response.getHeaders().getLocation();
+        assertThat(location).isNotNull();
         String path = location.getPath();
         return Long.parseLong(path.substring(path.lastIndexOf('/') + 1));
     }

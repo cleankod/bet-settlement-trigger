@@ -17,20 +17,20 @@ against event outcomes when they arrive.
 }
 ```
 
-| Field | Type | Required | Constraints |
-|-------|------|----------|-------------|
-| `userId` | string | ✅ | not blank |
-| `eventId` | string | ✅ | not blank |
-| `eventMarketId` | string | ✅ | not blank |
-| `selectedWinnerId` | string | ✅ | not blank — the participant the user predicts will win |
-| `betAmount` | decimal | ✅ | > 0 |
+| Field              | Type    | Required | Constraints                                            |
+|--------------------|---------|----------|--------------------------------------------------------|
+| `userId`           | string  | ✅        | not blank                                              |
+| `eventId`          | string  | ✅        | not blank                                              |
+| `eventMarketId`    | string  | ✅        | not blank                                              |
+| `selectedWinnerId` | string  | ✅        | not blank — the participant the user predicts will win |
+| `betAmount`        | decimal | ✅        | > 0                                                    |
 
 **Responses:**
 
-| Status | Description |
-|--------|-------------|
-| `201 Created` | Bet placed; `Location` header contains `/api/v1/bets/{betId}` |
-| `400 Bad Request` | Validation failure — see error body |
+| Status            | Description                                                   |
+|-------------------|---------------------------------------------------------------|
+| `201 Created`     | Bet placed; `Location` header contains `/api/v1/bets/{betId}` |
+| `400 Bad Request` | Validation failure — see error body                           |
 
 ---
 

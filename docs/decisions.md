@@ -68,23 +68,27 @@ requires running a name server + broker, configuring the Java client, handling r
 DLQ, and retries — significant operational complexity for a home assignment with no additional
 functional value.
 
-The `LocalBetSettlementSimulator` (`@Profile("local")`) connects the publisher directly to
-the settlement handler in-process, enabling a complete end-to-end flow in development and
-integration tests without a real broker.
+Under the `local` profile, `LocalBetSettlementPublisher` calls `SettleBetUseCase` directly,
+enabling a complete end-to-end flow in development and integration tests without a real broker.
 
 **Trade-off:** Settlement commands are not durable. Documented as a future improvement.
 
 ---
 
-## Settlement messaging: publisher and consumer are separate components
+## Settlement messaging: publisher calls use case directly (local profile)
 
-**Decision:** Keep `BetSettlementPublisher` (out port) and `BetSettlementMessageHandler`
-(in adapter) as separate components. The `LocalBetSettlementSimulator` wires them together
-only under the `local` profile.
+**Decision:** `LocalBetSettlementPublisher` (`@Profile("local")`) calls `SettleBetUseCase`
+directly after logging the settlement command. `LoggingBetSettlementPublisher` (`@Profile("!local")`)
+logs only, without triggering settlement.
 
-**Rationale:** If the consumer logic were hidden inside the publisher, swapping in a real
-RocketMQ implementation would require untangling them. Keeping them separate means the
-real RocketMQ publisher can be added without touching the handler.
+**Rationale:** For the assignment scope, the simplest approach that makes the full end-to-end
+flow testable without a real RocketMQ broker. The dependency rule is maintained — the publisher
+depends on the inbound port (`SettleBetUseCase`), not on any adapter class. In production, the
+`!local` publisher would publish to RocketMQ, and a separate `@RocketMQMessageListener` inbound
+adapter would deliver messages to `SettleBetUseCase` independently.
+
+**Trade-off:** The two-component design (publisher + consumer) is not yet implemented. This is
+acceptable for the assignment scope and documented as a future improvement.
 
 ---
 

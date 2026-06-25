@@ -30,9 +30,9 @@ The service simulates the outcome-handling and bet-settlement pipeline for a spo
 2. The REST adapter publishes the outcome to the Kafka topic `event-outcomes`.
 3. A Kafka consumer picks up the message and matches it against pending bets stored in an in-memory H2 database.
 4. For each matched pending bet, a settlement command is published to the settlement messaging port.
-5. A settlement message handler consumes the command and settles the bet (WON or LOST).
-6. RocketMQ is represented by a mock/logging adapter. A `LocalBetSettlementSimulator` (active under
-   the `local` profile) connects the publisher directly to the handler, enabling full end-to-end
+5. The settlement publisher delivers the command and settles the bet (WON or LOST).
+6. RocketMQ is represented by a mock/logging adapter. Under the `local` profile,
+   `LocalBetSettlementPublisher` calls `SettleBetUseCase` directly, enabling full end-to-end
    flow without a real RocketMQ broker.
 
 ---
@@ -207,27 +207,24 @@ request lifecycle.
 The service uses a lightweight **Hexagonal Architecture** (Ports and Adapters):
 
 ```
-┌────────────────────────────────────────────────────────┐
-│                  Inbound Adapters                       │
-│  REST Controller  │  Kafka Consumer  │  Settlement Handler │
-└──────────┬────────┴────────┬─────────┴────────┬──────────┘
-           │                 │                  │
-           ▼                 ▼                  ▼
-┌────────────────────────────────────────────────────────┐
-│              Application Layer (Use Cases)              │
-│  PublishEventOutcomeUseCase                             │
-│  HandleEventOutcomeUseCase                              │
-│  SettleBetUseCase                                       │
-└──────────┬────────────────────────────┬────────────────┘
-           │                            │
-           ▼                            ▼
-┌──────────────────────┐   ┌────────────────────────────┐
-│    Domain Model       │   │       Outbound Adapters     │
-│  Bet, UnsavedBet      │   │  KafkaEventOutcomePublisher │
-│  EventOutcome         │   │  JdbcBetRepositoryAdapter   │
-│  BetSettlement        │   │  LoggingBetSettlementPublisher│
-│  BetStatus            │   └────────────────────────────┘
-└──────────────────────┘
+┌──────────────────────────────────────┐
+│          Inbound Adapters            │
+│  REST Controller  │  Kafka Consumer  │
+└────────┬──────────┴────────┬─────────┘
+         │                   │
+         ▼                   ▼
+┌──────────────────────────────────────┐
+│     Application Layer (Use Cases)    │
+│  PublishEventOutcomeUseCase          │
+│  HandleEventOutcomeUseCase           │
+│  SettleBetUseCase ◄────────────────────────┐
+└──────────────────────────────────────┘     │
+         │                              Outbound Adapters
+         ▼                          ┌──────────────────────┐
+┌──────────────────┐                │  Kafka publisher     │
+│   Domain Model   │                │  JDBC repository     │
+│  Bet lifecycle   │                │  Settlement publisher│
+└──────────────────┘                └──────────────────────┘
 ```
 
 **Package layout:**
@@ -242,25 +239,22 @@ eu.cleankod.settlementtrigger
   adapter/
     in/rest/            ← REST controller, request/response DTOs, error handling
     in/kafka/           ← Kafka consumer
-    in/settlement/      ← Settlement message handler, local simulator
     out/kafka/          ← Kafka producer (EventOutcomePublisher impl)
     out/persistence/    ← Spring Data JDBC adapter (BetRepository impl)
-    out/settlement/     ← Mock settlement publisher (LoggingBetSettlementPublisher)
+    out/settlement/     ← Settlement publisher (two profile-exclusive implementations)
   config/               ← Spring configuration (Kafka, correlation ID filter)
 ```
 
-**Settlement flow:**
+**Settlement flow (local profile):**
 
 ```
-REST POST
-  → EventOutcomePublishingService
-    → KafkaEventOutcomePublisher (publishes to event-outcomes topic)
-      → EventOutcomeKafkaConsumer (consumes from event-outcomes topic)
-        → EventOutcomeHandlingService (finds pending bets, publishes settlements)
-          → LoggingBetSettlementPublisher (logs JSON; in local profile: calls handler directly)
-            → BetSettlementMessageHandler
-              → BetSettlementService (settles bet, saves updated status)
+REST POST → Kafka (event-outcomes) → Kafka Consumer
+  → find pending bets → publish BetSettlement command
+    → LocalBetSettlementPublisher → SettleBetUseCase → save settled Bet
 ```
+
+Under the `!local` profile, `LocalBetSettlementPublisher` is replaced by `LoggingBetSettlementPublisher`
+which logs the command as JSON; a real RocketMQ consumer would deliver to `SettleBetUseCase` instead.
 
 ---
 
@@ -322,9 +316,8 @@ Settlement is idempotent at two layers:
 ### RocketMQ is mocked
 
 `LoggingBetSettlementPublisher` logs settlement commands as JSON instead of publishing to a real
-RocketMQ broker. The `LocalBetSettlementSimulator` (active under `@Profile("local")`) wires the
-publisher callback directly to the settlement handler, enabling full end-to-end flow in
-development and test environments without a real broker.
+RocketMQ broker. Under the `local` profile, `LocalBetSettlementPublisher` calls `SettleBetUseCase`
+directly, enabling full end-to-end flow in development and test environments without a real broker.
 
 This is an intentional trade-off for the assignment scope — see [Given More Time](#given-more-time).
 

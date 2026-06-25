@@ -1,165 +1,80 @@
 # Architecture
 
-The service is structured around a lightweight **Hexagonal Architecture** (Ports and Adapters).
-The core principle is that the domain and application layers have no knowledge of Spring, Kafka,
-JDBC, or any other infrastructure technology. All framework dependencies are contained in adapters.
+The service follows **Hexagonal Architecture** (Ports and Adapters). The domain and application
+layers have no knowledge of Spring, Kafka, JDBC, or any other infrastructure. All framework
+dependencies are confined to adapters.
 
 ## Layers
 
-### Domain
+**Domain** — pure Java records and logic. No framework annotations, no infrastructure imports.
+Models the `Bet` lifecycle: `PENDING → WON | LOST`.
 
-Pure Java — no framework annotations, no Spring, no persistence. Contains:
+**Application** — use cases that orchestrate the domain. Depends only on domain classes and
+port interfaces. Never on adapters.
 
-- `Bet` — a persisted bet with a guaranteed database id (primitive `long`)
-- `UnsavedBet` — a bet before persistence (no id field)
-- `BetStatus` — `PENDING`, `WON`, `LOST`
-- `EventOutcome` — the sports event outcome received from the REST API
-- `BetSettlement` — the settlement command carrying bet id, event winner, and correlation id
-- `BetAlreadySettledException` — thrown by `Bet.settle()` if the bet is not `PENDING`
-- `EventMismatchException` — thrown if a settlement command references a different event than the bet
+**Adapters** — all Spring/Kafka/JDBC code. Two kinds:
 
-The two-type model (`Bet` vs. `UnsavedBet`) enforces a compiler-level guarantee that a bet
-without a database id can never be accidentally used where a persisted bet is expected.
+- *Inbound*: receive external input and call use case ports (REST, Kafka consumer)
+- *Outbound*: implement use case ports to reach external systems (Kafka publisher, database, settlement)
 
-### Application
-
-Orchestrates use cases. Depends on domain and port interfaces only — never on adapters.
-
-**Inbound ports (use case interfaces):**
-
-| Interface                    | Called by                  |
-|------------------------------|----------------------------|
-| `PublishEventOutcomeUseCase` | REST controller            |
-| `HandleEventOutcomeUseCase`  | Kafka consumer             |
-| `SettleBetUseCase`           | Settlement message handler |
-
-**Outbound ports:**
-
-| Interface                | Implemented by                  |
-|--------------------------|---------------------------------|
-| `BetRepository`          | `JdbcBetRepositoryAdapter`      |
-| `EventOutcomePublisher`  | `KafkaEventOutcomePublisher`    |
-| `BetSettlementPublisher` | `LoggingBetSettlementPublisher` |
-
-**Services:**
-
-| Service                         | Responsibility                                                          |
-|---------------------------------|-------------------------------------------------------------------------|
-| `EventOutcomePublishingService` | Delegates to `EventOutcomePublisher`                                    |
-| `EventOutcomeHandlingService`   | Finds pending bets by event ID; publishes a settlement command for each |
-| `BetSettlementService`          | Sole writer of bet state; settles a bet and persists the updated status |
-
-### Adapters
-
-All framework code lives here. Adapters implement or consume ports.
-
-**Inbound:**
-
-| Adapter                       | Technology                    | Purpose                                                                                            |
-|-------------------------------|-------------------------------|----------------------------------------------------------------------------------------------------|
-| `EventOutcomeController`      | Spring MVC                    | REST endpoint; validates input; calls `PublishEventOutcomeUseCase`                                 |
-| `EventOutcomeKafkaConsumer`   | Spring Kafka `@KafkaListener` | Consumes from `event-outcomes`; calls `HandleEventOutcomeUseCase`                                  |
-| `BetSettlementMessageHandler` | Plain component               | Consumes settlement commands; calls `SettleBetUseCase`                                             |
-| `LocalBetSettlementSimulator` | `@Profile("local")`           | Wires `LoggingBetSettlementPublisher` callback to `BetSettlementMessageHandler` for local/test use |
-
-**Outbound:**
-
-| Adapter                         | Technology             | Purpose                                                      |
-|---------------------------------|------------------------|--------------------------------------------------------------|
-| `KafkaEventOutcomePublisher`    | Spring `KafkaTemplate` | Publishes `EventOutcome` to `event-outcomes` topic           |
-| `JdbcBetRepositoryAdapter`      | Spring Data JDBC       | Implements `BetRepository` — maps `BetEntity` ↔ domain `Bet` |
-| `LoggingBetSettlementPublisher` | SLF4J                  | Mock RocketMQ — logs settlement command as JSON              |
-
-## Package layout
+## Package structure
 
 ```
 eu.cleankod.settlementtrigger
-  domain/
-    Bet.java
-    UnsavedBet.java
-    BetStatus.java
-    EventOutcome.java
-    BetSettlement.java
-    BetAlreadySettledException.java
-    EventMismatchException.java
+  domain/           ← pure domain model and exceptions
   application/
-    port/
-      in/
-        PublishEventOutcomeUseCase.java
-        HandleEventOutcomeUseCase.java
-        SettleBetUseCase.java
-      out/
-        BetRepository.java
-        EventOutcomePublisher.java
-        BetSettlementPublisher.java
-    service/
-      EventOutcomePublishingService.java
-      EventOutcomeHandlingService.java
-      BetSettlementService.java
+    port/in/        ← inbound use case interfaces
+    port/out/       ← outbound port interfaces
+    service/        ← use case implementations
   adapter/
-    in/
-      rest/
-        EventOutcomeController.java
-        EventOutcomeRequest.java
-        GlobalExceptionHandler.java
-        ErrorResponse.java
-        ErrorIdGenerator.java
-      kafka/
-        EventOutcomeKafkaConsumer.java
-      settlement/
-        BetSettlementMessageHandler.java
-        LocalBetSettlementSimulator.java
-    out/
-      kafka/
-        KafkaEventOutcomePublisher.java
-      persistence/
-        JdbcBetRepositoryAdapter.java
-        BetEntity.java
-        SpringDataBetRepository.java
-      settlement/
-        LoggingBetSettlementPublisher.java
-  config/
-    KafkaConfig.java
-    KafkaTopics.java
-    CorrelationId.java
-    CorrelationIdFilter.java
+    in/rest/        ← REST controller and error handling
+    in/kafka/       ← Kafka consumer
+    out/kafka/      ← Kafka producer
+    out/persistence/← Spring Data JDBC repository
+    out/settlement/ ← settlement publisher (mock + local)
+  config/           ← Spring configuration
 ```
 
 ## Settlement flow
 
+```mermaid
+sequenceDiagram
+    participant Client
+    participant REST as REST Adapter
+    participant Kafka as Kafka (event-outcomes)
+    participant Consumer as Kafka Consumer
+    participant DB as H2 Database
+    participant Publisher as BetSettlementPublisher
+    participant UseCase as SettleBetUseCase
+
+    Client->>REST: POST /api/v1/event-outcomes
+    REST->>Kafka: publish EventOutcome
+    REST-->>Client: 202 Accepted
+
+    Kafka->>Consumer: consume EventOutcome (async)
+    Consumer->>DB: findPendingByEventId
+    DB-->>Consumer: list of pending bets
+
+    loop for each pending bet
+        Consumer->>Publisher: publish(BetSettlement)
+        Publisher->>UseCase: settle(BetSettlement)
+        UseCase->>DB: save settled Bet
+    end
 ```
-POST /api/v1/event-outcomes
-  │
-  ▼ EventOutcomeController
-  │   validates request, maps to EventOutcome
-  ▼ EventOutcomePublishingService
-  │   calls EventOutcomePublisher port
-  ▼ KafkaEventOutcomePublisher
-  │   publishes to Kafka topic 'event-outcomes'
-  │   propagates X-Correlation-ID header
-  │
-  ▼ EventOutcomeKafkaConsumer (async, separate thread)
-  │   reads X-Correlation-ID from Kafka header → MDC
-  ▼ EventOutcomeHandlingService
-  │   finds all PENDING bets for eventId
-  │   for each bet: publishes BetSettlement command
-  ▼ LoggingBetSettlementPublisher (mock)
-  │   [local profile] invokes BetSettlementMessageHandler directly
-  │
-  ▼ BetSettlementMessageHandler
-  ▼ BetSettlementService
-      finds bet by id
-      calls Bet.settle(actualWinnerId) → WON or LOST
-      saves updated Bet
-```
+
+### Profile-based settlement
+
+`BetSettlementPublisher` has two implementations, active on mutually exclusive profiles:
+
+| Profile  | Class                           | Behaviour                                                                                      |
+|----------|---------------------------------|------------------------------------------------------------------------------------------------|
+| `local`  | `LocalBetSettlementPublisher`   | Logs the command and calls `SettleBetUseCase` directly — full end-to-end flow without RocketMQ |
+| `!local` | `LoggingBetSettlementPublisher` | Logs the command as JSON only — simulates publication to RocketMQ                              |
+
+In production, the `!local` publisher would be replaced by a real RocketMQ producer, and a
+separate inbound adapter (`@RocketMQMessageListener`) would deliver messages to `SettleBetUseCase`.
 
 ## Dependency rule
 
-The dependency arrow always points inward — domain has no outbound dependencies,
-application depends only on domain and its own port interfaces, adapters depend on application.
-
-```
-adapters → application → domain
-              ↑
-            ports
-```
+Dependencies always point inward. Adapters depend on application ports; application depends on
+domain; domain depends on nothing.

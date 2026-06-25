@@ -52,9 +52,8 @@ real RocketMQ broker. This means:
 
 - Settlement commands are **not durable** — they exist only as log entries
 - No consumer group, no replay, no DLQ
-- The `LocalBetSettlementSimulator` (`@Profile("local")`) connects the publisher directly to
-  the settlement handler in-process, making the full end-to-end flow work in development
-  and integration tests without a real broker
+- Under the `local` profile, `LocalBetSettlementPublisher` calls `SettleBetUseCase` directly,
+  making the full end-to-end flow work in development and integration tests without a real broker
 
 See [Decisions](decisions.md) for the rationale behind this trade-off.
 

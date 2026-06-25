@@ -26,11 +26,13 @@ dependencies {
     implementation libs.spring.boot.starter.validation
     implementation libs.spring.boot.starter.data.jdbc
     implementation libs.spring.boot.starter.actuator
-    implementation libs.spring.kafka
-    implementation libs.flyway.core
+    implementation libs.spring.boot.starter.kafka
+    implementation libs.spring.boot.starter.flyway
     runtimeOnly libs.h2
 
     testImplementation libs.spring.boot.starter.test
+    testImplementation libs.spring.boot.restclient
+    testImplementation libs.spring.boot.resttestclient
     testImplementation libs.spring.kafka.test
     testImplementation libs.testcontainers.kafka
     testImplementation libs.testcontainers.junit

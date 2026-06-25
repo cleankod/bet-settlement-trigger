@@ -198,6 +198,13 @@ eu.cleankod.settlementtrigger
 - Test at least: valid REST request, validation failure, Kafka flow, bet matching, WON/LOST settlement,
   duplicate event outcome, idempotency (already-settled bet unchanged).
 - Test profile activates `LocalBetSettlementSimulator` for full-flow verification.
+- Exception assertions must use `catchThrowable`: call `catchThrowable(...)` in the `// when` section,
+  assign the result to a variable, and assert on it in the `// then` section.
+  Never use `assertThatThrownBy(...)` or `assertThatExceptionOfType(...)`.
+- Integration tests must extend a shared `BaseIntegrationTest` abstract class that holds
+  Testcontainers setup, `@DynamicPropertySource`, common `@SpringBootTest` and `@ActiveProfiles`
+  annotations, and shared autowired beans (e.g., `TestRestTemplate`, `BetRepository`).
+  Individual test classes only contain test scenarios.
 
 ## Docker rules
 

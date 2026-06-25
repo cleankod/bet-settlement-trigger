@@ -1,5 +1,6 @@
 [versions]
 spring-boot = "4.1.0"
+testcontainers = "1.20.6"
 
 [libraries]
 # Spring Boot starters — versions managed by BOM
@@ -8,20 +9,21 @@ spring-boot-starter-data-jdbc = { module = "org.springframework.boot:spring-boot
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 
-# Spring Kafka — version managed by BOM (4.1.0)
-spring-kafka = { module = "org.springframework.kafka:spring-kafka" }
+# Spring Kafka starter — includes spring-boot-kafka (KafkaAutoConfiguration, @EnableKafka wiring)
+spring-boot-starter-kafka = { module = "org.springframework.boot:spring-boot-starter-kafka" }
 
-# Flyway — version managed by BOM (12.4.0)
-flyway-core = { module = "org.flywaydb:flyway-core" }
-
+# Flyway starter — includes flyway-core and Spring Boot autoconfiguration
+spring-boot-starter-flyway = { module = "org.springframework.boot:spring-boot-starter-flyway" }
 # H2 in-memory database — version managed by BOM (2.4.240)
 h2 = { module = "com.h2database:h2" }
 
 # Test — versions managed by BOM
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-restclient = { module = "org.springframework.boot:spring-boot-restclient" }
+spring-boot-resttestclient = { module = "org.springframework.boot:spring-boot-resttestclient" }
 spring-kafka-test = { module = "org.springframework.kafka:spring-kafka-test" }
-testcontainers-kafka = { module = "org.testcontainers:kafka" }
-testcontainers-junit = { module = "org.testcontainers:junit-jupiter" }
+testcontainers-kafka = { module = "org.testcontainers:kafka", version.ref = "testcontainers" }
+testcontainers-junit = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }

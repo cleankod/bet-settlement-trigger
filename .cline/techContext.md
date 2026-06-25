@@ -29,7 +29,6 @@ eu.cleankod.settlementtrigger
   adapter
     in.rest                      -- REST controller
     in.kafka                     -- Kafka consumer
-    in.settlement                -- Settlement message handler + local simulator
     out.kafka                    -- Kafka producer
     out.persistence              -- Spring Data JDBC adapter
     out.settlement               -- Logging/mock settlement publisher
@@ -48,7 +47,7 @@ eu.cleankod.settlementtrigger
 **Inbound:**
 - `PublishEventOutcomeUseCase` — called by REST adapter
 - `HandleEventOutcomeUseCase` — called by Kafka consumer; matches bets + publishes settlement commands
-- `SettleBetUseCase` — called by settlement handler; settles a single bet
+- `SettleBetUseCase` — called by `LocalBetSettlementPublisher` (local profile); settles a single bet
 
 **Outbound:**
 - `EventOutcomePublisher` → `KafkaEventOutcomePublisher`
@@ -57,10 +56,9 @@ eu.cleankod.settlementtrigger
 
 ## Settlement Flow (RocketMQ Mock)
 
-Publishing and consuming are always separate concerns:
-- `LoggingBetSettlementPublisher` — logs settlement command as JSON (mock publisher)
-- `BetSettlementMessageHandler` — handles settlement commands
-- `LocalBetSettlementSimulator` — active on `local`/`test` profile; bridges publisher → handler
+Two profile-exclusive implementations of `BetSettlementPublisher`:
+- `LoggingBetSettlementPublisher` (`@Profile("!local")`) — logs settlement command as JSON only
+- `LocalBetSettlementPublisher` (`@Profile("local")`) — logs command and calls `SettleBetUseCase` directly
 
 ## Key Decisions
 

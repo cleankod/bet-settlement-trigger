@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Branch: `in-memory-persistence`
-- Based on: freshly merged `master` (application ports and services merged)
-- Task: in-memory bet persistence implemented, ready to commit
+- Branch: `event-outcome-rest-api`
+- Based on: freshly merged `master` (in-memory persistence merged)
+- Task: REST API implemented, ready to commit
 
 ## Most Recent Decisions
 
@@ -14,7 +14,7 @@
 - **BetSettlement** is dual-purpose (published message + inbound command); WON/LOST not in command — derived by `Bet.settle()` only
 - **BetRepository**: `save(UnsavedBet)` → `Bet`; `save(Bet)` → `void`; `findById(long)`; `findPendingByEventId(String)`
 - **Single writer**: `BetSettlementService` is the only component that calls `save(Bet)`
-- **EventOutcome**: only `eventId` + `eventWinnerId` (eventName lives in REST DTO only)
+- **EventOutcome**: `eventId`, `eventName`, `eventWinnerId` — `eventName` is carried through to Kafka for audit/human-readable enrichment; no domain invariant references it
 - **BetEntity**: record with `@Id Long id`, factory methods, `toDomain()`
 - **SpringDataBetRepository**: package-private, `@Query` for pending-by-event
 - **JdbcBetRepositoryAdapter**: `@Repository`, maps entity ↔ domain
@@ -33,7 +33,7 @@
 
 ## Immediate Next Steps After This Branch Merges
 
-1. `event-outcome-rest-api` → `EventOutcomeRequest` (validated DTO), `EventOutcomeController` (POST /api/v1/event-outcomes → 202), global error handler, correlation ID filter
+1. `kafka-integration` → Kafka producer (`KafkaEventOutcomePublisher`), Kafka consumer (`EventOutcomeKafkaConsumer`)
 
 ## Session Resumption Notes
 

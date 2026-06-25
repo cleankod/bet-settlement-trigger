@@ -6,6 +6,7 @@ spring-boot = "4.1.0"
 spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
 spring-boot-starter-data-jdbc = { module = "org.springframework.boot:spring-boot-starter-data-jdbc" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 
 # Spring Kafka — version managed by BOM (4.1.0)
 spring-kafka = { module = "org.springframework.kafka:spring-kafka" }

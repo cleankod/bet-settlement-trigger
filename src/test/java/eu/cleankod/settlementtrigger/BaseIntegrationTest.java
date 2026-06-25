@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>Profile {@code local} activates {@code LocalBetSettlementPublisher},
  * enabling the full publish→settle flow without a real RocketMQ broker.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = BetSettlementTriggerApplication.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
 @Testcontainers
 @ActiveProfiles("local")

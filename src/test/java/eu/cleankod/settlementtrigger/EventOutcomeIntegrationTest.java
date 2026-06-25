@@ -1,5 +1,6 @@
 package eu.cleankod.settlementtrigger;
 
+import eu.cleankod.settlementtrigger.domain.Bet;
 import eu.cleankod.settlementtrigger.domain.BetStatus;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -146,7 +147,7 @@ class EventOutcomeIntegrationTest extends BaseIntegrationTest {
             await().atMost(10, TimeUnit.SECONDS)
                     .untilAsserted(() -> assertThat(
                             betRepository.findById(betId)
-                                    .map(bet -> bet.status())
+                                    .map(Bet::status)
                                     .orElseThrow())
                             .isEqualTo(BetStatus.WON));
         }
@@ -169,7 +170,7 @@ class EventOutcomeIntegrationTest extends BaseIntegrationTest {
             await().atMost(10, TimeUnit.SECONDS)
                     .untilAsserted(() -> assertThat(
                             betRepository.findById(betId)
-                                    .map(bet -> bet.status())
+                                    .map(Bet::status)
                                     .orElseThrow())
                             .isEqualTo(BetStatus.LOST));
         }
@@ -190,7 +191,7 @@ class EventOutcomeIntegrationTest extends BaseIntegrationTest {
             await().atMost(10, TimeUnit.SECONDS)
                     .untilAsserted(() -> assertThat(
                             betRepository.findById(betId)
-                                    .map(bet -> bet.status())
+                                    .map(Bet::status)
                                     .orElseThrow())
                             .isEqualTo(BetStatus.WON));
 
@@ -201,7 +202,7 @@ class EventOutcomeIntegrationTest extends BaseIntegrationTest {
             await().during(3, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS)
                     .untilAsserted(() -> assertThat(
                             betRepository.findById(betId)
-                                    .map(bet -> bet.status())
+                                    .map(Bet::status)
                                     .orElseThrow())
                             .isEqualTo(BetStatus.WON));
         }

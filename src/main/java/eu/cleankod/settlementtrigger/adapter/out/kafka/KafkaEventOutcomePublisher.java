@@ -39,11 +39,10 @@ class KafkaEventOutcomePublisher implements EventOutcomePublisher {
     public void publish(EventOutcome eventOutcome) {
         ProducerRecord<String, EventOutcome> producerRecord =
                 new ProducerRecord<>(KafkaTopics.EVENT_OUTCOMES, eventOutcome.eventId(), eventOutcome);
+        // CorrelationIdFilter always populates MDC before the controller runs for HTTP requests
         String correlationId = MDC.get(CorrelationId.MDC_KEY);
-        if (correlationId != null) {
-            producerRecord.headers().add(
-                    new RecordHeader(CorrelationId.KAFKA_HEADER, correlationId.getBytes(StandardCharsets.UTF_8)));
-        }
+        producerRecord.headers().add(
+                new RecordHeader(CorrelationId.KAFKA_HEADER, correlationId.getBytes(StandardCharsets.UTF_8)));
         try {
             kafkaTemplate.send(producerRecord).get(publishTimeout.toMillis(), TimeUnit.MILLISECONDS);
             log.info("Published event outcome to Kafka [eventId={}, eventName={}]",

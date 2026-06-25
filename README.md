@@ -39,11 +39,17 @@ The service simulates the outcome-handling and bet-settlement pipeline for a spo
 
 ## Prerequisites
 
-| Tool                    | Version                               |
-|-------------------------|---------------------------------------|
-| Java                    | 25 (via [SDKMAN](https://sdkman.io/)) |
-| Docker + Docker Compose | Any recent version                    |
-| Gradle                  | Wrapper included (`./gradlew`)        |
+| Tool                    | Version                |
+|-------------------------|------------------------|
+| Java                    | 25                     |
+| Docker + Docker Compose | Any recent version     |
+| Gradle                  | Wrapper included (`./gradlew`) |
+
+Verify your JDK before starting:
+
+```bash
+java -version   # should report 25
+```
 
 ---
 
@@ -64,7 +70,7 @@ docker compose ps
 ### 2. Run the application
 
 ```bash
-JAVA_HOME=~/.sdkman/candidates/java/current ./gradlew bootRun
+./gradlew bootRun
 ```
 
 The application starts on port `8080`. Kafka bootstrap address defaults to `localhost:9092`.
@@ -72,7 +78,7 @@ The application starts on port `8080`. Kafka bootstrap address defaults to `loca
 To activate `LocalBetSettlementPublisher` for full end-to-end settlement without RocketMQ:
 
 ```bash
-JAVA_HOME=~/.sdkman/candidates/java/current ./gradlew bootRun --args='--spring.profiles.active=local'
+./gradlew bootRun --args='--spring.profiles.active=local'
 ```
 
 ### 3. Place a bet
@@ -131,7 +137,7 @@ docker compose down
 Requires Docker (Testcontainers spins up a real Kafka container):
 
 ```bash
-JAVA_HOME=~/.sdkman/candidates/java/current ./gradlew test
+./gradlew test
 ```
 
 The test suite includes:
@@ -224,18 +230,18 @@ the response is returned immediately after successful publication.
 
 **Responses:**
 
-| Status                      | Description                         |
-|-----------------------------|-------------------------------------|
-| `202 Accepted`              | Outcome accepted for publication    |
-| `400 Bad Request`           | Validation failure — see error body |
-| `500 Internal Server Error` | Publication to Kafka failed         |
+| Status                    | Description                         |
+|---------------------------|-------------------------------------|
+| `202 Accepted`            | Outcome accepted for publication    |
+| `400 Bad Request`         | Validation failure — see error body |
+| `503 Service Unavailable` | Publication to Kafka failed         |
 
 **Error response body:**
 
 ```json
 {
   "errorId": "550e8400-e29b-41d4-a716-446655440000",
-  "code": "VALIDATION_ERROR",
+  "code": "VALIDATION_FAILURE",
   "message": "Request validation failed",
   "details": [
     "eventId: must not be blank"
@@ -339,7 +345,7 @@ Example:
 ### Correlation ID propagation
 
 - Inbound: read from `X-Correlation-ID` header (generated if absent), stored in MDC
-- Outbound Kafka: written as a Kafka header `X-Correlation-ID`
+- Outbound Kafka: written as a Kafka message header `correlationId` (note: different name from the HTTP header)
 - Inbound Kafka: read from Kafka header, restored to MDC for the consumer thread
 
 ---

@@ -69,7 +69,7 @@ JAVA_HOME=~/.sdkman/candidates/java/current ./gradlew bootRun
 
 The application starts on port `8080`. Kafka bootstrap address defaults to `localhost:9092`.
 
-To activate the local settlement simulator (full end-to-end without RocketMQ):
+To activate `LocalBetSettlementPublisher` for full end-to-end settlement without RocketMQ:
 
 ```bash
 JAVA_HOME=~/.sdkman/candidates/java/current ./gradlew bootRun --args='--spring.profiles.active=local'

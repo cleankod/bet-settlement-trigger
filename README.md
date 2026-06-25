@@ -224,11 +224,11 @@ the response is returned immediately after successful publication.
 
 **Responses:**
 
-| Status                      | Description                         |
-|-----------------------------|-------------------------------------|
-| `202 Accepted`              | Outcome accepted for publication    |
-| `400 Bad Request`           | Validation failure — see error body |
-| `503 Service Unavailable`   | Publication to Kafka failed         |
+| Status                    | Description                         |
+|---------------------------|-------------------------------------|
+| `202 Accepted`            | Outcome accepted for publication    |
+| `400 Bad Request`         | Validation failure — see error body |
+| `503 Service Unavailable` | Publication to Kafka failed         |
 
 **Error response body:**
 

@@ -7,6 +7,7 @@ import eu.cleankod.settlementtrigger.domain.BetSettlement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Single writer for bet state. Settles a bet when a settlement command arrives.
@@ -30,6 +31,7 @@ public class BetSettlementService implements SettleBetUseCase {
     }
 
     @Override
+    @Transactional
     public void settle(BetSettlement betSettlement) {
         betRepository.findById(betSettlement.betId()).ifPresentOrElse(
                 bet -> {

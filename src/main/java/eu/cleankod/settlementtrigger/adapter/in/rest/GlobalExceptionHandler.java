@@ -1,5 +1,6 @@
 package eu.cleankod.settlementtrigger.adapter.in.rest;
 
+import eu.cleankod.settlementtrigger.application.port.out.EventOutcomePublicationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -27,6 +28,15 @@ class GlobalExceptionHandler {
         return ResponseEntity
                 .badRequest()
                 .body(ErrorResponse.of(errorId, "VALIDATION_FAILURE", "Request validation failed", details));
+    }
+
+    @ExceptionHandler(EventOutcomePublicationException.class)
+    ResponseEntity<ErrorResponse> handlePublicationFailure(EventOutcomePublicationException exception) {
+        String errorId = ErrorIdGenerator.newErrorId();
+        log.error("Event outcome publication failed [errorId={}]: {}", errorId, exception.getMessage(), exception);
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ErrorResponse.of(errorId, "PUBLICATION_FAILURE", "Event outcome could not be published"));
     }
 
     @ExceptionHandler(Exception.class)

@@ -25,6 +25,10 @@ spring:
       key-serializer: 'org.apache.kafka.common.serialization.StringSerializer'
       value-serializer: 'org.springframework.kafka.support.serializer.JsonSerializer'
 
+app:
+  kafka:
+    publish-timeout: '5s'
+
 management:
   endpoints:
     web:

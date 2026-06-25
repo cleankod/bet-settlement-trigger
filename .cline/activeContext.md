@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Branch: `event-outcome-rest-api`
-- Based on: freshly merged `master` (in-memory persistence merged)
-- Task: REST API implemented, ready to commit
+- Branch: `kafka-integration`
+- Based on: freshly merged `master` (event-outcome-rest-api merged)
+- Task: Kafka producer + consumer implemented, ready to commit
 
 ## Most Recent Decisions
 
@@ -33,7 +33,7 @@
 
 ## Immediate Next Steps After This Branch Merges
 
-1. `kafka-integration` → Kafka producer (`KafkaEventOutcomePublisher`), Kafka consumer (`EventOutcomeKafkaConsumer`)
+1. `settlement-adapter` → `LoggingBetSettlementPublisher`, `BetSettlementMessageHandler`, `LocalBetSettlementSimulator`
 
 ## Session Resumption Notes
 

@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Branch: `kafka-integration`
-- Based on: freshly merged `master` (event-outcome-rest-api merged)
-- Task: Kafka producer + consumer implemented, ready to commit
+- Branch: `settlement-adapter`
+- Based on: freshly merged `master` (kafka-integration merged)
+- Task: Settlement adapter implemented — `LoggingBetSettlementPublisher`, `BetSettlementMessageHandler`, `LocalBetSettlementSimulator`
 
 ## Most Recent Decisions
 
@@ -21,6 +21,11 @@
 - **V1 migration**: `src/main/resources/db/migration/V1__create_bets.sql`
 - **V2 seed migration**: `src/test/resources/db/migration/` (created in test branch)
 - **Groovy DSL** confirmed; **JUnit 5** confirmed
+- **KafkaTopics.EVENT_OUTCOMES**: shared constant; topic name not duplicated
+- **EventOutcomePublicationException**: lives in `application.port.out` (transport concern, not domain invariant)
+- **Kafka publish timeout**: configurable via `app.kafka.publish-timeout` (default `5s`); `.get(timeout)` makes it synchronous + bounded
+- **LoggingBetSettlementPublisher**: mock RocketMQ — logs JSON, optional delivery callback
+- **LocalBetSettlementSimulator**: `@Profile("local")` — wires publisher callback to handler for full end-to-end flow without RocketMQ
 
 ## Branching Workflow
 
@@ -33,7 +38,7 @@
 
 ## Immediate Next Steps After This Branch Merges
 
-1. `settlement-adapter` → `LoggingBetSettlementPublisher`, `BetSettlementMessageHandler`, `LocalBetSettlementSimulator`
+1. `integration-tests` → Testcontainers Kafka, full-flow tests (REST→Kafka→settle), WON/LOST/idempotency
 
 ## Session Resumption Notes
 
@@ -41,3 +46,4 @@
 - Always check `git branch --show-current` and `git status` before making changes.
 - Do not start the next branch until the user confirms master is freshly pulled.
 - Build command: `JAVA_HOME=~/.sdkman/candidates/java/current ./gradlew compileJava`
+- Test command: `JAVA_HOME=~/.sdkman/candidates/java/current ./gradlew test`

@@ -4,19 +4,19 @@
 
 | Branch | Content | Status |
 |--------|---------|--------|
-| `init-project-structure` | Gradle scaffold: `build.gradle`, `settings.gradle`, `gradle/libs.versions.toml`, `BetSettlementTriggerApplication.java`, `application.yml` | ✅ merged |
+| `init-project-structure` | Gradle scaffold: `build.gradle`, `settings.gradle`, `gradle/libs.versions.toml`, `BetSettlementTriggerApplication.java` | ✅ merged |
 | `contenerized-local-runtime` | `Dockerfile` (multi-stage), `docker-compose.yml` (Kafka KRaft + RocketMQ) | ✅ merged |
 | `gitignore-hexagonal-arch-fix` | Fixed `.gitignore`: `out/` → `/out/` to allow `application/port/out/` to be tracked | ✅ merged |
 | `project-rules` | `.clinerules` with full project rules, commit conventions, branching workflow | ✅ merged |
 | `project-memory-bank` | This memory bank | ✅ merged |
 | `domain-model` | `UnsavedBet`, `Bet`, `BetStatus`, `EventOutcome`, `BetSettlement`, domain exceptions | ✅ merged |
-| `application-ports-and-services` | port/in + port/out interfaces, 3 application services | 🔄 in progress |
+| `application-ports-and-services` | port/in + port/out interfaces, 3 application services | ✅ merged |
+| `in-memory-persistence` | `application.yml`, V1 Flyway migration, `BetEntity` (record), `SpringDataBetRepository`, `JdbcBetRepositoryAdapter` | 🔄 in progress |
 
 ## In-Progress / Next Stages
 
 | Branch | Content |
 |--------|---------|
-| `in-memory-bet-persistence` | V1 migration, `BetEntity`, `JdbcBetRepositoryAdapter`, `BetSettlementTriggerApplication.java`, `application.yml` |
 | `event-outcome-rest-api` | REST controller, validation, 202 Accepted, error handling, correlation ID |
 | `kafka-integration` | Kafka producer + consumer adapters |
 | `settlement-adapter` | Mock settlement publisher, message handler, local simulator |

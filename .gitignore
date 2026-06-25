@@ -258,3 +258,7 @@ gradle-app.setting
 
 # End of https://www.toptal.com/developers/gitignore/api/intellij+all,intellij+iml,intellij,gradle
 *.pdf
+
+# MkDocs
+site/
+venv/

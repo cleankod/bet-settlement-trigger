@@ -191,3 +191,46 @@ We chose **H2 with Spring Data JDBC and Flyway migrations** for the following re
 ### Limitation (same in both approaches)
 
 All bet data is lost on application restart. This is expected and acceptable per the assignment.
+
+---
+
+## Concurrency and atomicity gaps
+
+The service is single-consumer and single-instance in the assignment context. Three concurrency
+hazards exist that are safe in this setup but would need to be addressed before scaling.
+
+### B1 — TOCTOU race in BetSettlementService (partially mitigated)
+
+`settle()` performs a read-check-write sequence: read the bet, check if PENDING, then write the
+settled state. Without a transaction, two concurrent settlement commands for the same bet can
+both read PENDING and both write. This is mitigated by `@Transactional` on the method, which
+makes the read-check-write atomic against the database within a single connection. However, for
+full safety under high concurrency, **optimistic locking** (`@Version` column) or a
+`SELECT ... FOR UPDATE` / `UPDATE ... WHERE status = 'PENDING'` pattern would be required to
+prevent concurrent writes even across transactions.
+
+In the current single-consumer setup, duplicate settlement commands carry the same `eventWinnerId`,
+so both writes produce the same final status — correctness holds accidentally.
+
+### B2 — Partial-publish gap in EventOutcomeHandlingService
+
+```
+findPendingByEventId(eventId)
+  → for each bet: publish(settlement command)  ← no transaction
+```
+
+If the publisher throws on bet N, bets 0..N-1 have settlement commands in flight and bets N..end
+do not. On Kafka redelivery all pending bets are reprocessed — the first group's settlement is
+idempotent, so eventual correctness holds. But the gap is real: the DB read and the publish are
+not atomic. The production fix is the **transactional outbox pattern**: write settlement commands
+to an outbox table in the same transaction as the status read, then relay them asynchronously.
+
+### B3 — Concurrent consumers can double-publish settlement batches
+
+If two consumer instances (or the same message redelivered) execute `findPendingByEventId`
+simultaneously before any bets are settled, both read the same pending bets and both publish
+settlement commands. `BetSettlementService` handles this idempotently, but N² settlement commands
+are generated. In practice this multiplies message volume without causing data errors.
+
+The fix is either a single-partition assignment (one consumer for a given `eventId`) or
+deduplication keys on the settlement commands.

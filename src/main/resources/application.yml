@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: 'bet-settlement-trigger'
+
+  datasource:
+    url: 'jdbc:h2:mem:bets;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE'
+    driver-class-name: 'org.h2.Driver'
+    username: 'sa'
+    password: ''
+
+  flyway:
+    enabled: true
+    locations: 'classpath:db/migration'
+
+  kafka:
+    bootstrap-servers: '${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}'
+    consumer:
+      group-id: 'bet-settlement-trigger'
+      auto-offset-reset: 'earliest'
+      key-deserializer: 'org.apache.kafka.common.serialization.StringDeserializer'
+      value-deserializer: 'org.springframework.kafka.support.serializer.JsonDeserializer'
+      properties:
+        spring.json.trusted.packages: 'eu.cleankod.settlementtrigger.*'
+    producer:
+      key-serializer: 'org.apache.kafka.common.serialization.StringSerializer'
+      value-serializer: 'org.springframework.kafka.support.serializer.JsonSerializer'
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: 'health,info,metrics'
+  endpoint:
+    health:
+      show-details: 'always'

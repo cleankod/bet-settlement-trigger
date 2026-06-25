@@ -75,7 +75,18 @@ To activate `LocalBetSettlementPublisher` for full end-to-end settlement without
 JAVA_HOME=~/.sdkman/candidates/java/current ./gradlew bootRun --args='--spring.profiles.active=local'
 ```
 
-### 3. Submit an event outcome
+### 3. Place a bet
+
+```bash
+curl -s -X POST http://localhost:8080/api/v1/bets \
+  -H 'Content-Type: application/json' \
+  -d '{"userId":"user-alice","eventId":"match-101","eventMarketId":"market-main","selectedWinnerId":"team-alpha","betAmount":50.00}' \
+  -w '\nHTTP %{http_code}\n'
+```
+
+Expected response: `HTTP 201` with a `Location: /api/v1/bets/1` header.
+
+### 4. Submit an event outcome
 
 ```bash
 curl -s -X POST http://localhost:8080/api/v1/event-outcomes \
@@ -85,6 +96,9 @@ curl -s -X POST http://localhost:8080/api/v1/event-outcomes \
 ```
 
 Expected response: `HTTP 202`
+
+With the `local` profile active, the bet placed in step 3 will be settled asynchronously —
+check the application logs to see the settlement command and the status update.
 
 ---
 

@@ -45,7 +45,7 @@ Observability and all other future improvements are documented in README "Given 
 - When resuming, read `progress.md` for overall status and `activeContext.md` for recent decisions.
 - Always check `git branch --show-current` and `git status` before making changes.
 - Do not start the next branch until the user confirms master is freshly pulled.
-- Build command: `JAVA_HOME=~/.sdkman/candidates/java/current ./gradlew compileJava`
-- Test command: `JAVA_HOME=~/.sdkman/candidates/java/current ./gradlew test`
+- Build command: `./gradlew compileJava`
+- Test command: `./gradlew test`
 - MkDocs command: `source venv/bin/activate && mkdocs serve` (use python3.12, not 3.14)
 - Docker must be running for Testcontainers tests to work

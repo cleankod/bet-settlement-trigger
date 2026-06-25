@@ -25,3 +25,4 @@ nav:
   - 'API': 'api.md'
   - 'Reliability': 'reliability.md'
   - 'Decisions': 'decisions.md'
+  - 'Assumptions': 'assumptions.md'

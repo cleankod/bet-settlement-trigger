@@ -420,6 +420,23 @@ in a production implementation:
 - **Auto-generated API docs** — Add SpringDoc/OpenAPI dependency to expose a Swagger UI and
   machine-readable OpenAPI spec at `/swagger-ui.html` and `/v3/api-docs`
 - **Kubernetes / Helm** — Production deployment manifests
+- **BetSettlement command should carry WON/LOST** — currently the downstream consumer re-derives the outcome; the assignment diagram implies
+  the command should include it
+- **`!local` profile leaves bets permanently PENDING** — the default runtime never settles bets because the RocketMQ publisher only logs; a
+  reviewer should be aware this is the intentional mock trade-off
+- **Kafka producer configuration via YAML** — remove the custom `KafkaConfig` class; drive the producer entirely through
+  `spring.kafka.producer.*` properties and let `KafkaAutoConfiguration` wire the `KafkaTemplate`; add missing properties (`acks`,
+  `enable.idempotence`, `retries`, `compression.type`, `client.id`)
+- **Kafka consumer DLQ** — add a `DeadLetterPublishingRecoverer` with a fixed retry limit to stop poison messages from blocking the
+  partition indefinitely
+- **`@ConfigurationProperties` for `app.kafka.*`** — replace `@Value` injection in `KafkaEventOutcomePublisher` with a typed properties
+  class for discoverability and validation
+- **Parameterize repetitive tests** — `BetTest` has duplicated test pairs differing only by terminal status; consolidate with
+  `@ParameterizedTest` + `@EnumSource`; similarly the three `400` event-outcome validation tests should be a single `@MethodSource` test
+- **Additional tests** — `EventOutcomeHandlingService` with multiple matching bets, `GlobalExceptionHandler` all three paths,
+  `BetSettlement.of()` mismatch throws `EventMismatchException`, `CorrelationIdFilter` header-present/absent/echoed
+- **Extract duplicate log format string** — `LocalBetSettlementPublisher` and `LoggingBetSettlementPublisher` share an identical
+  `log.info(...)` format; extract to a shared constant or utility
 
 ---
 

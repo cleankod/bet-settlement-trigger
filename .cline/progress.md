@@ -15,11 +15,16 @@
 | `event-outcome-rest-api` | REST controller, validation, 202 Accepted, error handling, correlation ID | ✅ merged |
 | `kafka-integration` | Kafka producer + consumer adapters | ✅ merged |
 | `settlement-adapter` | Mock settlement publisher, message handler, local simulator | ✅ merged |
-| `integration-tests` | Testcontainers Kafka tests, V2 seed migration, WON/LOST/idempotency tests | 🔄 in progress |
+| `integration-tests` | Testcontainers Kafka tests, V2 seed migration, WON/LOST/idempotency tests | ✅ merged |
+| `documentation` | README, MkDocs (5 pages), AI usage disclosure | 🔄 in progress |
 
-## In-Progress / Next Stages
+## Out of Scope (documented as future improvements in README)
 
-| Branch | Content |
-|--------|---------|
-| `documentation` | README, MkDocs, AI usage disclosure |
-| `observability` | Business metrics, structured logging, MDC enhancements |
+- Observability: Micrometer business metrics, full OTel stack
+- Real RocketMQ integration
+- Outbox pattern / exactly-once semantics
+- ArchUnit tests
+- Performance, load, and penetration tests
+- CI/CD pipeline
+- 12-Factor App validation
+- Kubernetes / Helm

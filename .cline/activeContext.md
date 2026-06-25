@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Branch: `integration-tests`
-- Based on: freshly merged `master` (settlement-adapter merged)
-- Task: Integration tests complete — all 9 tests pass (3 REST validation + 4 end-to-end flow + 2 BetTest unit tests)
+- Branch: `documentation`
+- Based on: freshly merged `master` (integration-tests merged)
+- Task: Documentation complete — README + MkDocs (5 pages) written and committed
 
 ## Most Recent Decisions
 
@@ -14,22 +14,17 @@
 - **BetSettlement** is dual-purpose (published message + inbound command); WON/LOST not in command — derived by `Bet.settle()` only
 - **BetRepository**: `save(UnsavedBet)` → `Bet`; `save(Bet)` → `void`; `findById(long)`; `findPendingByEventId(String)`
 - **Single writer**: `BetSettlementService` is the only component that calls `save(Bet)`
-- **EventOutcome**: `eventId`, `eventName`, `eventWinnerId` — `eventName` is carried through to Kafka for audit/human-readable enrichment; no domain invariant references it
+- **EventOutcome**: `eventId`, `eventName`, `eventWinnerId` — `eventName` is carried through to Kafka for audit/human-readable enrichment
 - **BetEntity**: record with `@Id Long id`, factory methods, `toDomain()`
 - **SpringDataBetRepository**: package-private, `@Query` for pending-by-event
 - **JdbcBetRepositoryAdapter**: `@Repository`, maps entity ↔ domain
 - **V1 migration**: `src/main/resources/db/migration/V1__create_bets.sql`
 - **V2 seed migration**: `src/test/resources/db/migration/` — distinct event IDs per scenario
-- **Groovy DSL** confirmed; **JUnit 5** confirmed
-- **KafkaTopics.EVENT_OUTCOMES**: shared constant; topic name not duplicated
-- **EventOutcomePublicationException**: lives in `application.port.out` (transport concern, not domain invariant)
-- **Kafka publish timeout**: configurable via `app.kafka.publish-timeout` (default `5s`)
-- **LoggingBetSettlementPublisher**: mock RocketMQ — logs JSON
-- **LocalBetSettlementPublisher**: `@Profile("local")` — wires publisher callback to handler for full end-to-end flow without RocketMQ
 - **spring-boot-starter-kafka** (not bare `spring-kafka`) required for `@KafkaListener` consumer auto-configuration
 - **spring-boot-starter-flyway** (not bare `flyway-core`) required for Flyway autoconfiguration
 - **H2 URL**: must include `CASE_INSENSITIVE_IDENTIFIERS=TRUE` for Flyway compat
-- **Kafka consumer**: `spring.json.value.default.type` required for reliable JsonDeserializer type inference
+- **Kafka consumer**: `JacksonJsonDeserializer` + `spring.json.java-type-info.default-type` (Jackson 3)
+- **MkDocs**: builds with `python3.12` via `venv`; `python3.14` (Homebrew) has broken `pyexpat`
 
 ## Branching Workflow
 
@@ -40,10 +35,10 @@
 5. Cline acknowledges, suggests next branch name.
 6. Repeat.
 
-## Immediate Next Steps After This Branch Merges
+## Project Status
 
-1. `documentation` → README (quick start, API examples, architecture, trade-offs, AI disclosure), MkDocs internal docs
-2. `observability` → Micrometer metrics (bets settled, events received), MDC correlation ID in all log paths
+`documentation` is the final branch. After merge, the project is complete as scoped.
+Observability and all other future improvements are documented in README "Given More Time".
 
 ## Session Resumption Notes
 
@@ -52,4 +47,5 @@
 - Do not start the next branch until the user confirms master is freshly pulled.
 - Build command: `JAVA_HOME=~/.sdkman/candidates/java/current ./gradlew compileJava`
 - Test command: `JAVA_HOME=~/.sdkman/candidates/java/current ./gradlew test`
+- MkDocs command: `source venv/bin/activate && mkdocs serve` (use python3.12, not 3.14)
 - Docker must be running for Testcontainers tests to work

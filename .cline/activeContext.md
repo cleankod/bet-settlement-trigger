@@ -2,9 +2,9 @@
 
 ## Current State
 
-- Branch: `settlement-adapter`
-- Based on: freshly merged `master` (kafka-integration merged)
-- Task: Settlement adapter implemented — `LoggingBetSettlementPublisher`, `BetSettlementMessageHandler`, `LocalBetSettlementSimulator`
+- Branch: `integration-tests`
+- Based on: freshly merged `master` (settlement-adapter merged)
+- Task: Integration tests complete — all 9 tests pass (3 REST validation + 4 end-to-end flow + 2 BetTest unit tests)
 
 ## Most Recent Decisions
 
@@ -19,13 +19,17 @@
 - **SpringDataBetRepository**: package-private, `@Query` for pending-by-event
 - **JdbcBetRepositoryAdapter**: `@Repository`, maps entity ↔ domain
 - **V1 migration**: `src/main/resources/db/migration/V1__create_bets.sql`
-- **V2 seed migration**: `src/test/resources/db/migration/` (created in test branch)
+- **V2 seed migration**: `src/test/resources/db/migration/` — distinct event IDs per scenario
 - **Groovy DSL** confirmed; **JUnit 5** confirmed
 - **KafkaTopics.EVENT_OUTCOMES**: shared constant; topic name not duplicated
 - **EventOutcomePublicationException**: lives in `application.port.out` (transport concern, not domain invariant)
-- **Kafka publish timeout**: configurable via `app.kafka.publish-timeout` (default `5s`); `.get(timeout)` makes it synchronous + bounded
-- **LoggingBetSettlementPublisher**: mock RocketMQ — logs JSON, optional delivery callback
-- **LocalBetSettlementSimulator**: `@Profile("local")` — wires publisher callback to handler for full end-to-end flow without RocketMQ
+- **Kafka publish timeout**: configurable via `app.kafka.publish-timeout` (default `5s`)
+- **LoggingBetSettlementPublisher**: mock RocketMQ — logs JSON
+- **LocalBetSettlementPublisher**: `@Profile("local")` — wires publisher callback to handler for full end-to-end flow without RocketMQ
+- **spring-boot-starter-kafka** (not bare `spring-kafka`) required for `@KafkaListener` consumer auto-configuration
+- **spring-boot-starter-flyway** (not bare `flyway-core`) required for Flyway autoconfiguration
+- **H2 URL**: must include `CASE_INSENSITIVE_IDENTIFIERS=TRUE` for Flyway compat
+- **Kafka consumer**: `spring.json.value.default.type` required for reliable JsonDeserializer type inference
 
 ## Branching Workflow
 
@@ -38,7 +42,8 @@
 
 ## Immediate Next Steps After This Branch Merges
 
-1. `integration-tests` → Testcontainers Kafka, full-flow tests (REST→Kafka→settle), WON/LOST/idempotency
+1. `documentation` → README (quick start, API examples, architecture, trade-offs, AI disclosure), MkDocs internal docs
+2. `observability` → Micrometer metrics (bets settled, events received), MDC correlation ID in all log paths
 
 ## Session Resumption Notes
 
@@ -47,3 +52,4 @@
 - Do not start the next branch until the user confirms master is freshly pulled.
 - Build command: `JAVA_HOME=~/.sdkman/candidates/java/current ./gradlew compileJava`
 - Test command: `JAVA_HOME=~/.sdkman/candidates/java/current ./gradlew test`
+- Docker must be running for Testcontainers tests to work

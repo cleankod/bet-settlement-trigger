@@ -75,7 +75,18 @@ To activate `LocalBetSettlementPublisher` for full end-to-end settlement without
 JAVA_HOME=~/.sdkman/candidates/java/current ./gradlew bootRun --args='--spring.profiles.active=local'
 ```
 
-### 3. Submit an event outcome
+### 3. Place a bet
+
+```bash
+curl -s -X POST http://localhost:8080/api/v1/bets \
+  -H 'Content-Type: application/json' \
+  -d '{"userId":"user-alice","eventId":"match-101","eventMarketId":"market-main","selectedWinnerId":"team-alpha","betAmount":50.00}' \
+  -w '\nHTTP %{http_code}\n'
+```
+
+Expected response: `HTTP 201` with a `Location: /api/v1/bets/1` header.
+
+### 4. Submit an event outcome
 
 ```bash
 curl -s -X POST http://localhost:8080/api/v1/event-outcomes \
@@ -85,6 +96,9 @@ curl -s -X POST http://localhost:8080/api/v1/event-outcomes \
 ```
 
 Expected response: `HTTP 202`
+
+With the `local` profile active, the bet placed in step 3 will be settled asynchronously —
+check the application logs to see the settlement command and the status update.
 
 ---
 
@@ -124,7 +138,9 @@ The test suite includes:
 
 | Test                                                        | Type              | What it verifies                                  |
 |-------------------------------------------------------------|-------------------|---------------------------------------------------|
-| `returns202AcceptedForValidRequest`                         | Integration       | REST endpoint accepts valid payload               |
+| `returns201CreatedWithLocationHeader`                       | Integration       | Bet placement returns 201 + Location header       |
+| `returns400WhenBetAmountIsZero`                             | Integration       | Validation rejects zero bet amount                |
+| `returns202AcceptedForValidRequest`                         | Integration       | Event outcome endpoint accepts valid payload      |
 | `returns400WhenEventIdIsMissing`                            | Integration       | Bean Validation rejects incomplete request        |
 | `returns400WhenEventWinnerIdIsMissing`                      | Integration       | Bean Validation rejects incomplete request        |
 | `settlesBetAsWonWhenSelectedWinnerMatchesActualWinner`      | Integration (E2E) | Full REST→Kafka→settle WON flow                   |
@@ -151,6 +167,39 @@ Open `http://127.0.0.1:8000` in your browser.
 ---
 
 ## API Reference
+
+### POST /api/v1/bets
+
+Places a new bet. Returns `201 Created` with a `Location` header pointing to the created bet resource.
+
+**Request:**
+
+```json
+{
+  "userId": "user-alice",
+  "eventId": "match-101",
+  "eventMarketId": "market-main",
+  "selectedWinnerId": "team-alpha",
+  "betAmount": 50.00
+}
+```
+
+| Field              | Type    | Required | Description                                |
+|--------------------|---------|----------|--------------------------------------------|
+| `userId`           | string  | ✅        | Identifier of the user placing the bet     |
+| `eventId`          | string  | ✅        | Identifier of the event the bet is for     |
+| `eventMarketId`    | string  | ✅        | Identifier of the market within the event  |
+| `selectedWinnerId` | string  | ✅        | The participant the user predicts will win |
+| `betAmount`        | decimal | ✅        | Stake amount (must be > 0)                 |
+
+**Responses:**
+
+| Status            | Description                                  |
+|-------------------|----------------------------------------------|
+| `201 Created`     | Bet placed; `Location: /api/v1/bets/{betId}` |
+| `400 Bad Request` | Validation failure — see error body          |
+
+---
 
 ### POST /api/v1/event-outcomes
 
